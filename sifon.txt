@@ -1,0 +1,101 @@
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# ----------------------------
+# DATOS
+# ----------------------------
+z1 = 15
+z2 = 18
+zB = 4
+z3 = 0
+
+# ----------------------------
+# EJE HORIZONTAL
+# ----------------------------
+x = np.linspace(0, 8, 200)
+
+# ----------------------------
+# DEFINIR INICIO DE TUBERÍA (≈ 2D)
+# ----------------------------
+x_entrada = 1.0
+
+# ----------------------------
+# GEOMETRÍA DE LA TUBERÍA (solo desde entrada)
+# ----------------------------
+def z_pipe_func(x):
+    return np.piecewise(
+        x,
+        [x <= 4, (x > 4) & (x <= 6), x > 6],
+        [
+            lambda x: 15 + (18-15)/4 * x,
+            lambda x: 18 + (4-18)/2 * (x-4),
+            lambda x: 4 + (0-4)/2 * (x-6)
+        ]
+    )
+
+z_pipe = z_pipe_func(x)
+
+# ----------------------------
+# LGH (interpolación)
+# ----------------------------
+x_LGH_pts = np.array([0, 4, 6, 8])
+LGH_pts   = np.array([15, 8, 4, 0])
+LGH = np.interp(x, x_LGH_pts, LGH_pts)
+
+# ----------------------------
+# ENERGÍA CINÉTICA VARIABLE
+# ----------------------------
+hv = np.zeros_like(x)
+
+for i, xi in enumerate(x):
+    if xi <= x_entrada:
+        hv[i] = 2 * (xi / x_entrada)  # crecimiento gradual
+    else:
+        hv[i] = 2
+
+# ----------------------------
+# LE
+# ----------------------------
+LE = LGH + hv
+
+# ----------------------------
+# GRÁFICA
+# ----------------------------
+plt.figure(figsize=(10,6))
+
+# --- TUBERÍA (solo desde la entrada) ---
+mask = x >= x_entrada
+plt.plot(x[mask], z_pipe[mask], linewidth=4, label='Tubería')
+
+# --- LGH ---
+plt.plot(x, LGH, 'r', linewidth=2, label='LGH')
+
+# --- LE ---
+plt.plot(x, LE, 'g--', linewidth=2, label='LE')
+
+# ----------------------------
+# MARCAR PUNTOS
+# ----------------------------
+plt.scatter([0,4,6,8], [15,18,4,0])
+
+plt.text(0,15.5,'1 (superficie libre)')
+plt.text(4,18.5,'2')
+plt.text(6,4.8,'B (p/γ=0)')
+plt.text(8,0.5,'3')
+
+# Entrada de tubería
+plt.axvline(x=x_entrada, linestyle=':', linewidth=1)
+plt.text(x_entrada, 13, 'Entrada (≈2D)', rotation=90)
+
+# ----------------------------
+# DETALLES
+# ----------------------------
+plt.xlabel('Longitud del sistema')
+plt.ylabel('Elevación (ft)')
+plt.title('Perfil de Energía REALISTA (con zona de entrada)')
+
+plt.legend()
+plt.grid()
+
+plt.show()
